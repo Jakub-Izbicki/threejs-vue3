@@ -3,34 +3,60 @@
 
 <script setup lang="ts">
 import * as THREE from 'three';
+import {MapControls} from "three/examples/jsm/controls/OrbitControls";
+
+const frustumSize = 10;
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const aspect = window.innerWidth / window.innerHeight;
+const camera = new THREE.OrthographicCamera(frustumSize * aspect / -2, frustumSize * aspect / 2, frustumSize / 2, frustumSize / -2, 1, 1000);
 
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
 document.getElementById('app')!.appendChild(renderer.domElement);
 
-camera.position.set(0, 0, 100);
+const controls = new MapControls(camera, renderer.domElement);
+// controls.enableRotate = false;
+
+camera.position.set(0, 10, 10);
 camera.lookAt(0, 0, 0);
 
-const material = new THREE.LineBasicMaterial({color: 0x0000ff});
+const ground = new THREE.Mesh(new THREE.BoxGeometry(10, 1, 10), new THREE.MeshPhongMaterial({
+  color: 0x777777,
+  flatShading: true
+}));
+ground.receiveShadow = true;
+const cube = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshPhongMaterial({color: 0x325ea8, flatShading: true}));
+cube.castShadow = true;
 
-const points = [];
-points.push(new THREE.Vector3(-10, 0, 0));
-points.push(new THREE.Vector3(0, 10, 0));
-points.push(new THREE.Vector3(10, 0, 0));
+cube.position.y = 1;
+cube.rotation.y = Math.PI * (1/4);
 
-const geometry = new THREE.BufferGeometry().setFromPoints(points);
+const axesHelper = new THREE.AxesHelper(2);
+cube.add(axesHelper);
 
-const line = new THREE.Line(geometry, material);
+scene.add(ground);
+scene.add(cube);
 
-scene.add(line);
+// lights
 
-function animate() {
+const dirLight1 = new THREE.DirectionalLight(0xffffff);
+dirLight1.position.set(1, 1, 1);
+dirLight1.castShadow = true;
+scene.add(dirLight1);
+
+const ambientLight = new THREE.AmbientLight(0x222222);
+scene.add(ambientLight);
+
+function animate(frame: number) {
   requestAnimationFrame(animate);
+
+  // cube.rotation.x = frame / 1000;
+  // cube.rotation.y = frame / 1000;
+
   renderer.render(scene, camera);
 }
 
-animate();
+animate(window.performance.now());
 </script>

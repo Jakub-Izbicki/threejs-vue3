@@ -70,23 +70,41 @@ dirLight1.add(lightBall);
 const ambientLight = new THREE.AmbientLight(0x333333);
 scene.add(ambientLight);
 
-function animate(frame: number) {
-  requestAnimationFrame(animate);
-
-  dirLight1.position.x = Math.sin(frame / 1000) * 5;
-  dirLight1.position.z = Math.cos(frame / 1000) * 5;
-
-  renderer.render(scene, camera);
-}
-
-window.onresize = () => {
+window.addEventListener('resize', () => {
   const newAspect = window.innerWidth / window.innerHeight;
   camera.left = frustumSize * newAspect / -2;
   camera.right = frustumSize * newAspect / 2;
   camera.updateProjectionMatrix();
 
   renderer.setSize(window.innerWidth, window.innerHeight);
-};
+});
+
+const pointer = {x: -1, y: -1};
+
+const raycaster = new THREE.Raycaster();
+
+document.addEventListener('pointermove', (event: PointerEvent) => {
+  pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+  pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+});
+
+let intersections = 0;
+
+function animate(frame: number) {
+  requestAnimationFrame(animate);
+
+  dirLight1.position.x = Math.sin(frame / 1000) * 5;
+  dirLight1.position.z = Math.cos(frame / 1000) * 5;
+
+  raycaster.setFromCamera(pointer, camera);
+  const intersectObjects = raycaster.intersectObjects(scene.children, false);
+  if (intersectObjects.length !== intersections) {
+    console.log(intersectObjects.length);
+    intersections = intersectObjects.length;
+  }
+
+  renderer.render(scene, camera);
+}
 
 animate(window.performance.now());
 </script>

@@ -86,10 +86,10 @@ let renderPixelatedPass = new RenderPixelatedPass(renderResolution, scene, camer
 composer.addPass(renderPixelatedPass);
 
 let bloomPass = new UnrealBloomPass(screenResolution, .4, .1, .9);
-composer.addPass(bloomPass);
+// composer.addPass(bloomPass);
 
 let pixelatePass = new PixelatePass(renderResolution);
-composer.addPass(pixelatePass);
+// composer.addPass(pixelatePass);
 
 window.addEventListener('resize', () => {
   const newAspect = window.innerWidth / window.innerHeight;
@@ -102,11 +102,17 @@ window.addEventListener('resize', () => {
   renderResolution.x |= 0;
   renderResolution.y |= 0;
 
-  // todo: does not work, probably need to extract pass materials as variables and update materials themselves instead
-  renderPixelatedPass.resolution = renderResolution;
-  renderPixelatedPass.material()
-  bloomPass.resolution = screenResolution;
-  pixelatePass.resolution = renderResolution;
+  // todo: does not work
+  renderPixelatedPass.shaderMaterial.uniforms.resolution.value = new THREE.Vector4(
+      renderResolution.x,
+      renderResolution.y,
+      1 / renderResolution.x,
+      1 / renderResolution.y,
+  );
+  renderPixelatedPass.updateTargets(renderResolution);
+
+  // bloomPass.resolution = screenResolution;
+  // pixelatePass.resolution = renderResolution;
 
   renderer.setSize(window.innerWidth, window.innerHeight);
 });

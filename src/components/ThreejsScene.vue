@@ -4,15 +4,24 @@
 <script setup lang="ts">
 import * as THREE from 'three';
 import {MapControls} from "three/examples/jsm/controls/OrbitControls";
+import {EffectComposer} from 'three/examples/jsm/postprocessing/EffectComposer'
+import RenderPixelatedPass from "./lib/shader/RenderPixelatedPass";
+import {UnrealBloomPass} from "three/examples/jsm/postprocessing/UnrealBloomPass";
+import PixelatePass from "./lib/shader/PixelatePass";
+
+let screenResolution = new THREE.Vector2(window.innerWidth, window.innerHeight);
+let renderResolution = screenResolution.clone().divideScalar(6);
+renderResolution.x |= 0;
+renderResolution.y |= 0;
 
 const frustumSize = 10;
 
 const scene = new THREE.Scene();
-const aspect = window.innerWidth / window.innerHeight;
+const aspect = screenResolution.x / screenResolution.y;
 const camera = new THREE.OrthographicCamera(frustumSize * aspect / -2, frustumSize * aspect / 2, frustumSize / 2, frustumSize / -2, 1, 1000);
 
 const renderer = new THREE.WebGLRenderer();
-renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setSize(screenResolution.x, screenResolution.y);
 renderer.shadowMap.enabled = true;
 document.getElementById('app')!.appendChild(renderer.domElement);
 
@@ -67,14 +76,37 @@ scene.add(dirLight1);
 const lightBall = new THREE.Mesh(new THREE.SphereGeometry(0.2), new THREE.MeshToonMaterial({color: 0xeeee00}));
 dirLight1.add(lightBall);
 
-const ambientLight = new THREE.AmbientLight(0x333333);
+const ambientLight = new THREE.AmbientLight(0x333333, 2);
 scene.add(ambientLight);
+
+// shaders
+const composer = new EffectComposer(renderer);
+
+let renderPixelatedPass = new RenderPixelatedPass(renderResolution, scene, camera);
+composer.addPass(renderPixelatedPass);
+
+let bloomPass = new UnrealBloomPass(screenResolution, .4, .1, .9);
+composer.addPass(bloomPass);
+
+let pixelatePass = new PixelatePass(renderResolution);
+composer.addPass(pixelatePass);
 
 window.addEventListener('resize', () => {
   const newAspect = window.innerWidth / window.innerHeight;
   camera.left = frustumSize * newAspect / -2;
   camera.right = frustumSize * newAspect / 2;
   camera.updateProjectionMatrix();
+
+  screenResolution = new THREE.Vector2(window.innerWidth, window.innerHeight);
+  renderResolution = screenResolution.clone().divideScalar(6);
+  renderResolution.x |= 0;
+  renderResolution.y |= 0;
+
+  // todo: does not work, probably need to extract pass materials as variables and update materials themselves instead
+  renderPixelatedPass.resolution = renderResolution;
+  renderPixelatedPass.material()
+  bloomPass.resolution = screenResolution;
+  pixelatePass.resolution = renderResolution;
 
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
@@ -84,8 +116,8 @@ const pointer = {x: -1, y: -1};
 const raycaster = new THREE.Raycaster();
 
 document.addEventListener('pointermove', (event: PointerEvent) => {
-  pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
-  pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  pointer.x = (event.clientX / screenResolution.x) * 2 - 1;
+  pointer.y = -(event.clientY / screenResolution.y) * 2 + 1;
 });
 
 let intersections = 0;
@@ -93,8 +125,8 @@ let intersections = 0;
 function animate(frame: number) {
   requestAnimationFrame(animate);
 
-  dirLight1.position.x = Math.sin(frame / 1000) * 5;
-  dirLight1.position.z = Math.cos(frame / 1000) * 5;
+  // dirLight1.position.x = Math.sin(frame / 1000) * 5;
+  // dirLight1.position.z = Math.cos(frame / 1000) * 5;
 
   raycaster.setFromCamera(pointer, camera);
   const intersectObjects = raycaster.intersectObjects(scene.children, false);
@@ -103,7 +135,8 @@ function animate(frame: number) {
     intersections = intersectObjects.length;
   }
 
-  renderer.render(scene, camera);
+  // renderer.render(scene, camera);
+  composer.render();
 }
 
 animate(window.performance.now());

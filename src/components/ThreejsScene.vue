@@ -8,10 +8,11 @@ import {EffectComposer} from 'three/examples/jsm/postprocessing/EffectComposer'
 import RenderPixelatedPass from "./lib/shader/RenderPixelatedPass";
 import {UnrealBloomPass} from "three/examples/jsm/postprocessing/UnrealBloomPass";
 import PixelatePass from "./lib/shader/PixelatePass";
-import {createCubeTileAt} from "./lib/util/Tiles";
+import {createCubeTileAt, createCubeTileGeometry} from "./lib/util/Tiles";
 import {Font, FontLoader} from "three/examples/jsm/loaders/FontLoader";
 import {onMounted, toRaw} from "vue";
 import Stats from "three/examples/jsm/libs/stats.module";
+import MultiGeometryMeshBuilder from "./lib/util/MultiGeometryMeshBuilder";
 
 const all = async () => {
 
@@ -30,6 +31,7 @@ const all = async () => {
   const renderer = new THREE.WebGLRenderer();
   renderer.setSize(screenResolution.x, screenResolution.y);
   renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   document.getElementById('app')!.appendChild(renderer.domElement);
 
   const controls = new MapControls(camera, renderer.domElement);
@@ -79,9 +81,13 @@ const all = async () => {
 
   console.log(`cubes: ${coords.length}`);
 
+  const builder = new MultiGeometryMeshBuilder(new THREE.MeshToonMaterial({color: 0x325ea8}));
+
   coords.forEach(c => {
-    createCubeTileAt(c.x, c.z, scene, camera, renderer, font);
-  })
+    builder.addGeometry(createCubeTileGeometry(c.x, c.z));
+  });
+
+  scene.add(builder.build());
 
 // lights
 

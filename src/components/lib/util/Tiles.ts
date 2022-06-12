@@ -1,6 +1,16 @@
 import * as THREE from "three"
 import {TextGeometry} from "three/examples/jsm/geometries/TextGeometry";
 import {Font} from "three/examples/jsm/loaders/FontLoader";
+import {mergeBufferGeometries} from "three/examples/jsm/utils/BufferGeometryUtils";
+import {BoxGeometry} from "three";
+
+export function createCubeTileGeometry(tileX: number, tileZ: number): THREE.BoxGeometry {
+  const cube = new THREE.BoxGeometry();
+
+  cube.translate(tileX, 1, tileZ);
+
+  return cube;
+}
 
 export function createCubeTileAt(tileX: number, tileZ: number, scene: THREE.Scene, camera: THREE.OrthographicCamera,
                                  renderer: THREE.WebGLRenderer, font: Font): THREE.Mesh {
@@ -18,6 +28,8 @@ export function createCubeTileAt(tileX: number, tileZ: number, scene: THREE.Scen
   cube.receiveShadow = true;
 
   scene.add(cube);
+
+  // mergeBufferGeometries([new BoxGeometry(0, 0, 0), cube.geometry])
 
   // const textGeometry = new TextGeometry(`${tileX}:${tileZ}`, {font: font, size: 0.4, height:0.001});
   // textGeometry.computeBoundingBox();
